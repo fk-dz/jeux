@@ -129,6 +129,40 @@
         color: #6ef7c4;
         font-weight: 900;
       }
+      .boot__play {
+        display: none;
+        margin: 1.2rem auto 0;
+        width: 100%;
+        max-width: 20rem;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.95rem 1.2rem;
+        border-radius: 1rem;
+        border: none;
+        font-family: inherit;
+        font-size: 1rem;
+        font-weight: 900;
+        color: #04121a;
+        text-decoration: none;
+        background: linear-gradient(135deg, #6ef7c4, #35d6ff 55%, #4c7dff);
+        box-shadow: 0 14px 36px -12px rgba(110, 247, 196, 0.85);
+        cursor: pointer;
+      }
+      .boot.is-dev .boot__play {
+        display: flex;
+        animation: bootFloat 2.6s ease-in-out infinite;
+      }
+      .boot__note {
+        display: none;
+        margin: 0.7rem auto 0;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: rgba(230, 237, 255, 0.35);
+      }
+      .boot.is-dev .boot__note {
+        display: block;
+      }
       .boot.is-dev .boot__warn,
       .boot.is-error .boot__err {
         display: block;
@@ -176,14 +210,12 @@
           <div class="boot__bar"><i></i></div>
           <p class="boot__warn">
             <b>أنت تفتح نسخة المصدر.</b><br />
-            هذا الملف (<code>index.html</code> في جذر المشروع) يطلب كود TypeScript لا يفهمه المتصفح مباشرة.
-            الملف الجاهز للتشغيل هو <code>dist/index.html</code>.
+            الملف الجاهز للتشغيل هو <code>dist/index.html</code> — ملف واحد مستقل بذاته.
           </p>
-          <p class="boot__warn">
-            للتشغيل محليًا شغّل <code>npm run build</code> ثم افتح
-            <code>dist/index.html</code> — ملف واحد مستقل بذاته.<br />
-            أو للتطوير المباشر: <code>npm run dev</code>.<br />
-            وعلى GitHub Pages ارفع المشروع واختر <b>Settings → Pages → GitHub Actions</b>.
+          <a class="boot__play" id="bootPlay" href="dist/index.html">▶&nbsp; تشغيل اللعبة الآن</a>
+          <p class="boot__note" id="bootNote">
+            لم يُبنَ المشروع بعد؟ شغّل <code>npm run build</code> ثم أعد تحميل هذه الصفحة.<br />
+            للتطوير المباشر: <code>npm run dev</code> · وعلى GitHub Pages: Settings → Pages → GitHub Actions
           </p>
           <p class="boot__err" id="bootErr"></p>
         </div>
@@ -211,17 +243,30 @@
           lastError = (e && e.message) || "خطأ غير معروف";
         });
 
-        // Source version: explain quickly (still allows a real dev server to boot).
+        // Source version: explain fast, and auto-jump to the built file if it exists.
         // Built version: give the bundle 3.5s, then surface the actual error.
         window.setTimeout(function () {
           if (root.dataset.booted === "1") return;
           boot.classList.add(isSource ? "is-dev" : "is-error");
-          if (!isSource && errBox) {
+          if (isSource) {
+            // If a built copy sits next to this file over http(s), go straight to it.
+            try {
+              fetch("dist/index.html", { method: "HEAD" })
+                .then(function (r) {
+                  if (r.ok && root.dataset.booted !== "1") window.location.replace("dist/index.html");
+                })
+                .catch(function () {
+                  /* file:// or missing build — the button below handles it */
+                });
+            } catch (e) {
+              /* ignore */
+            }
+          } else if (errBox) {
             errBox.textContent = lastError
               ? "تفاصيل الخطأ: " + lastError
-              : "لم يُنفَّذ كود اللعبة. تأكد من أنك تفتح dist/index.html المُولَّد بأمر npm run build.";
+              : "لم يُنفَّذ كود اللعبة. أعد بناء المشروع بأمر npm run build ثم افتح dist/index.html.";
           }
-        }, isSource ? 2200 : 3500);
+        }, isSource ? 1200 : 3500);
       })();
     </script>
   </body>
